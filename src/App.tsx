@@ -50,7 +50,7 @@ const App = () => {
   );
   const [trackChoices, setTrackChoices] = useState<SavedTrack[]>([]);
 
-  useEffect(() => {
+  const setUpGame = () => {
     if (!tracks) {
       return;
     }
@@ -62,6 +62,10 @@ const App = () => {
     }
     setCurrentTrack(rightTrack);
     setTrackChoices(shuffleArray([rightTrack, wrongTrack1, wrongTrack2]));
+  };
+
+  useEffect(() => {
+    setUpGame();
   }, [tracks]);
 
   const checkAnswer = (track: SavedTrack) => {
@@ -70,6 +74,7 @@ const App = () => {
     } else {
       swal('Dommage !', "Ce n'est pas la bonne réponse", 'error');
     }
+    setUpGame();
   };
 
   return (
