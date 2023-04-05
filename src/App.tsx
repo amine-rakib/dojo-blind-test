@@ -1,12 +1,13 @@
 import logo from './assets/logo.svg';
 import './App.css';
-import { SavedTrack } from 'spotify-types';
+import { SavedTrack, Track } from 'spotify-types';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-const apiToken = '';
+const apiToken =
+  'BQCAxifN1wqfn9udcEKJRHLMIeviNNKWNkTxToVaugDxwQ7BVePmD8rfwC7Qm5DgwR6Cq0wIxZPDRmnMPzPZ8FJNsIrPY4zce4xhQ1WZLPDlmD99PecrkeHdMFXeUvYyur3aPYs5fREZelS7VvaJZKhT1woZ9hyy6FpXxe2_Oq2Swg-IvTZds9fKSxUDybo8DlLVTOdp-rnamNzJXS_UDbhA3a8qil4uiisVDAiPqltkN-UFwGdgDTCIr8drqigDzhB9pUxqrQNMiUHwVQOtoo3YR305hfurlKp6keQZKuSp6isQYateUjd_hIXlQP5kKzuXmtC_wyYTTyDO7ONt';
 
-export const fetchTracks = async () => {
+const fetchTracks = async () => {
   const response = await fetch('https://api.spotify.com/v1/me/tracks', {
     method: 'GET',
     headers: {
@@ -20,6 +21,15 @@ export const fetchTracks = async () => {
   const data = (await response.json()) as { items: SavedTrack[] };
 
   return data.items;
+};
+
+const AlbumCover = ({ track }: { track: Track }) => {
+  return (
+    <img
+      src={track.album.images?.[0]?.url ?? ''}
+      style={{ width: 400, height: 400 }}
+    />
+  );
 };
 
 const App = () => {
@@ -53,6 +63,7 @@ const App = () => {
             <h2>{`${selectedTrack?.name} (${selectedTrackIndex + 1} / ${
               tracks.length
             })`}</h2>
+            <AlbumCover track={selectedTrack} />
             <div>
               <audio src={selectedTrack?.preview_url ?? ''} controls autoPlay />
             </div>
