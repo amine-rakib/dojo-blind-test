@@ -2,7 +2,8 @@ import logo from './assets/logo.svg';
 import './App.css';
 import { SavedTrack, Track } from 'spotify-types';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import swal from 'sweetalert';
 
 const apiToken =
   'BQCAxifN1wqfn9udcEKJRHLMIeviNNKWNkTxToVaugDxwQ7BVePmD8rfwC7Qm5DgwR6Cq0wIxZPDRmnMPzPZ8FJNsIrPY4zce4xhQ1WZLPDlmD99PecrkeHdMFXeUvYyur3aPYs5fREZelS7VvaJZKhT1woZ9hyy6FpXxe2_Oq2Swg-IvTZds9fKSxUDybo8DlLVTOdp-rnamNzJXS_UDbhA3a8qil4uiisVDAiPqltkN-UFwGdgDTCIr8drqigDzhB9pUxqrQNMiUHwVQOtoo3YR305hfurlKp6keQZKuSp6isQYateUjd_hIXlQP5kKzuXmtC_wyYTTyDO7ONt';
@@ -23,6 +24,14 @@ const fetchTracks = async () => {
   return data.items;
 };
 
+const pickRandomTrack = (tracks: SavedTrack[]) => {
+  return tracks[Math.floor(Math.random() * tracks.length)]!;
+};
+
+const shuffleArray = (tracks: SavedTrack[]) => {
+  return tracks.sort(() => Math.random() - 0.5);
+};
+
 const AlbumCover = ({ track }: { track: Track }) => {
   return (
     <img
@@ -32,6 +41,16 @@ const AlbumCover = ({ track }: { track: Track }) => {
   );
 };
 
+const TrackButton = ({
+  track,
+  onClick,
+}: {
+  track: SavedTrack;
+  onClick: () => void;
+}) => {
+  return <button onClick={onClick}>{track.track?.name}</button>;
+};
+
 const App = () => {
   const {
     data: tracks,
@@ -39,15 +58,31 @@ const App = () => {
     isLoading,
   } = useQuery({ queryKey: ['tracks'], queryFn: fetchTracks });
 
-  const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
+  const [currentTrack, setCurrentTrack] = useState<SavedTrack | undefined>(
+    undefined,
+  );
+  const [trackChoices, setTrackChoices] = useState<SavedTrack[]>([]);
 
-  const goToNextTrack = () => {
-    if (isSuccess) {
-      setSelectedTrackIndex((selectedTrackIndex + 1) % tracks?.length);
+  useEffect(() => {
+    if (!tracks) {
+      return;
+    }
+
+    const rightTrack = pickRandomTrack(tracks);
+    setCurrentTrack(rightTrack);
+
+    const wrongTracks = [pickRandomTrack(tracks), pickRandomTrack(tracks)];
+    const choices = shuffleArray([rightTrack, ...wrongTracks]);
+    setTrackChoices(choices);
+  }, [tracks]);
+
+  const checkAnswer = (track: SavedTrack) => {
+    if (track.track?.id == currentTrack?.track?.id) {
+      swal('Bravo !', "C'est la bonne réponse", 'success');
+    } else {
+      swal('Dommage !', "Ce n'est pas la bonne réponse", 'error');
     }
   };
-
-  const selectedTrack = tracks?.[selectedTrackIndex]?.track;
 
   return (
     <div className="App">
@@ -60,18 +95,21 @@ const App = () => {
           'Loading...'
         ) : (
           <div>
-            <h2>{`${selectedTrack?.name} (${selectedTrackIndex + 1} / ${
-              tracks.length
-            })`}</h2>
-            <AlbumCover track={selectedTrack} />
             <div>
-              <audio src={selectedTrack?.preview_url ?? ''} controls autoPlay />
+              <audio
+                src={currentTrack?.track?.preview_url ?? ''}
+                controls
+                autoPlay
+              />
             </div>
-            <button onClick={goToNextTrack}>Next track</button>
           </div>
         )}
       </div>
-      <div className="App-buttons"></div>
+      <div className="App-buttons">
+        {trackChoices.map(track => (
+          <TrackButton track={track} onClick={() => checkAnswer(track)} />
+        ))}
+      </div>
     </div>
   );
 };
