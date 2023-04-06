@@ -28,6 +28,15 @@ const shuffleArray = <T,>(tracks: Array<T>) => {
   return tracks.sort(() => Math.random() - 0.5);
 };
 
+const AlbumCover = ({ track }: { track: Track }) => {
+  return (
+    <img
+      src={track.album.images?.[0]?.url ?? ''}
+      style={{ width: 200, height: 200 }}
+    />
+  );
+};
+
 const TrackButton = ({
   track,
   onClick,
@@ -35,7 +44,12 @@ const TrackButton = ({
   track: SavedTrack;
   onClick: () => void;
 }) => {
-  return <button onClick={onClick}>{track.track?.name}</button>;
+  return (
+    <div className="App-track-details">
+      <AlbumCover track={track.track as Track} />
+      <button onClick={onClick}>{track.track?.name}</button>
+    </div>
+  );
 };
 
 const App = () => {
