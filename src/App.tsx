@@ -24,21 +24,8 @@ const fetchTracks = async () => {
   return data.items;
 };
 
-const pickRandomTrack = (tracks: SavedTrack[]) => {
-  return tracks[Math.floor(Math.random() * tracks.length)]!;
-};
-
-const shuffleArray = (tracks: SavedTrack[]) => {
+const shuffleArray = <T,>(tracks: Array<T>) => {
   return tracks.sort(() => Math.random() - 0.5);
-};
-
-const AlbumCover = ({ track }: { track: Track }) => {
-  return (
-    <img
-      src={track.album.images?.[0]?.url ?? ''}
-      style={{ width: 400, height: 400 }}
-    />
-  );
 };
 
 const TrackButton = ({
@@ -68,12 +55,13 @@ const App = () => {
       return;
     }
 
-    const rightTrack = pickRandomTrack(tracks);
+    const [rightTrack, wrongTrack1, wrongTrack2, ...rest] =
+      shuffleArray(tracks);
+    if (!rightTrack || !wrongTrack1 || !wrongTrack2) {
+      return;
+    }
     setCurrentTrack(rightTrack);
-
-    const wrongTracks = [pickRandomTrack(tracks), pickRandomTrack(tracks)];
-    const choices = shuffleArray([rightTrack, ...wrongTracks]);
-    setTrackChoices(choices);
+    setTrackChoices(shuffleArray([rightTrack, wrongTrack1, wrongTrack2]));
   }, [tracks]);
 
   const checkAnswer = (track: SavedTrack) => {
