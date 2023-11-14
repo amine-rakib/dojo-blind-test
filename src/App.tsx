@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import swal from 'sweetalert';
 
 const apiToken =
-  'BQCAxifN1wqfn9udcEKJRHLMIeviNNKWNkTxToVaugDxwQ7BVePmD8rfwC7Qm5DgwR6Cq0wIxZPDRmnMPzPZ8FJNsIrPY4zce4xhQ1WZLPDlmD99PecrkeHdMFXeUvYyur3aPYs5fREZelS7VvaJZKhT1woZ9hyy6FpXxe2_Oq2Swg-IvTZds9fKSxUDybo8DlLVTOdp-rnamNzJXS_UDbhA3a8qil4uiisVDAiPqltkN-UFwGdgDTCIr8drqigDzhB9pUxqrQNMiUHwVQOtoo3YR305hfurlKp6keQZKuSp6isQYateUjd_hIXlQP5kKzuXmtC_wyYTTyDO7ONt';
+  'BQAP0oxaa9F-nyvVFc6aDrbJqMp8MbolFfHKOPACP6q6R0r7n83xj6ase-ePbd6uQucQEqOVbeyRddmHsT_q7MWxUFqYpX2XT_BEyfKL3gVN_ilZZ-UufyhcL5pl86ATSVtmiTsKYthMMlDwsMDXdqTkbj6GFfkiaClxG5ks0EbuAv6sG5ylFYzSeQV0QIRedZrk8pV9T0NyMCwHW2ry-6A_Tlmr9Q';
 
 const fetchTracks = async () => {
   const response = await fetch('https://api.spotify.com/v1/me/tracks', {
@@ -35,7 +35,7 @@ const AlbumCover = ({ track }: { track: any }) => {
   return (
     <img
       src={track.album.images?.[0]?.url ?? ''}
-      style={{ width: 400, height: 400 }}
+      style={{ width: 200, height: 200 }}
     />
   );
 };
@@ -47,7 +47,12 @@ const TrackButton = ({
   track: any;
   onClick: () => void;
 }) => {
-  return <button onClick={onClick}>{track.track?.name}</button>;
+  return (
+    <div className="App-track-button">
+      <AlbumCover track={track.track} />
+      <button onClick={onClick}>{track.track?.name}</button>
+    </div>
+  );
 };
 
 const App = () => {
