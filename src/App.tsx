@@ -1,6 +1,5 @@
 import logo from './assets/logo.svg';
 import './App.css';
-import { SavedTrack, Track } from 'spotify-types';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import swal from 'sweetalert';
@@ -19,20 +18,20 @@ const fetchTracks = async () => {
   if (!response.ok) {
     throw new Error(`Fetching tracks failed with status ${response.status}`);
   }
-  const data = (await response.json()) as { items: SavedTrack[] };
+  const data = (await response.json()) as { items: any[] };
 
   return data.items;
 };
 
-const pickRandomTrack = (tracks: SavedTrack[]) => {
+const pickRandomTrack = (tracks: any[]) => {
   return tracks[Math.floor(Math.random() * tracks.length)]!;
 };
 
-const shuffleArray = (tracks: SavedTrack[]) => {
+const shuffleArray = (tracks: any[]) => {
   return tracks.sort(() => Math.random() - 0.5);
 };
 
-const AlbumCover = ({ track }: { track: Track }) => {
+const AlbumCover = ({ track }: { track: any }) => {
   return (
     <img
       src={track.album.images?.[0]?.url ?? ''}
@@ -45,7 +44,7 @@ const TrackButton = ({
   track,
   onClick,
 }: {
-  track: SavedTrack;
+  track: any;
   onClick: () => void;
 }) => {
   return <button onClick={onClick}>{track.track?.name}</button>;
@@ -58,10 +57,10 @@ const App = () => {
     isLoading,
   } = useQuery({ queryKey: ['tracks'], queryFn: fetchTracks });
 
-  const [currentTrack, setCurrentTrack] = useState<SavedTrack | undefined>(
+  const [currentTrack, setCurrentTrack] = useState<any | undefined>(
     undefined,
   );
-  const [trackChoices, setTrackChoices] = useState<SavedTrack[]>([]);
+  const [trackChoices, setTrackChoices] = useState<any[]>([]);
 
   useEffect(() => {
     if (!tracks) {
@@ -76,7 +75,7 @@ const App = () => {
     setTrackChoices(choices);
   }, [tracks]);
 
-  const checkAnswer = (track: SavedTrack) => {
+  const checkAnswer = (track: any) => {
     if (track.track?.id == currentTrack?.track?.id) {
       swal('Bravo !', "C'est la bonne réponse", 'success');
     } else {
