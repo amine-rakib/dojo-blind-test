@@ -21,14 +21,104 @@ const generateSpotifyClient = async () => {
 const generateType = (typeName, typeSchema) => {  
   console.log(`Generating type ${typeName}...`);
 
-  const generatedType = getGeneratedType(typeName, typeSchema);
+  const generatedCode = getGeneratedCode(typeName, typeSchema);
 
-  writeFile(`${targetDirectory}/${typeName}.ts`, generatedType);
+  writeFile(`${targetDirectory}/${typeName}.ts`, generatedCode);
 }
 
-const getGeneratedType = (type, schema) => {
-  // TO DO: Generate typescript code from schema
-  return "";
+const getGeneratedCode = (typeName, typeSchema) => {
+  let imports = [];
+
+  const generatedType = getGeneratedType(typeSchema, imports, 0);
+
+  const generatedImports = imports.map((importName) => `import { ${importName} } from "./${importName}";`).join("\n");
+  const separator = imports.length > 0 ? "\n\n" : "";
+  const generatedExport = `export type ${typeName} = ${generatedType};`;
+
+  return `${generatedImports}${separator}${generatedExport}`;
+}
+
+const getGeneratedType = (typeSchema, imports, indentationLevel) => {
+  const schemaType = typeSchema.type;
+
+  if (typeSchema.allOf !== undefined) {
+    return getGeneratedAllOf(typeSchema.allOf, imports, indentationLevel);
+  }
+  if (typeSchema.oneOf !== undefined) {
+    return getGeneratedOneOf(typeSchema.oneOf, imports, indentationLevel);
+  }
+  if (typeSchema.$ref !== undefined) {
+    updateImports(imports, typeSchema.$ref);
+    return getGeneratedRef(typeSchema.$ref);
+  }
+
+  switch (schemaType) {
+    case "number":
+    case "integer":
+      return "number";
+    case "string":
+      if (typeSchema.enum !== undefined) {
+        return getGeneratedEnum(typeSchema.enum);
+      }
+      return "string";
+    case "boolean":
+      return "boolean";
+    case "array":
+      return `${getGeneratedType(typeSchema.items, imports, indentationLevel)}[]`;
+    case "object":
+      return getGeneratedObject(typeSchema, imports, indentationLevel);
+    default:
+      return "";
+  }
+}
+
+const getGeneratedObject = (typeSchema, imports, indentationLevel) => {
+
+  const properties = typeSchema.properties ?? {};
+  const required = typeSchema.required ?? [];
+
+  const generatedProperties = Object.keys(properties).map((propertyName) => {
+    const property = properties[propertyName];
+    const isRequired = required.includes(propertyName);
+
+    const generatedProperty = getGeneratedType(property, imports, indentationLevel + 1);
+
+    return `${propertyName}${isRequired ? "" : "?"}: ${generatedProperty};`;
+  });
+  
+  const indentation = "  ".repeat(indentationLevel);
+  const lineBreakWithIndentation = `\n${indentation}  `;
+  return `{${lineBreakWithIndentation}${generatedProperties.join(lineBreakWithIndentation)}\n${indentation}}`;
+}
+
+const getGeneratedAllOf = (allOf, imports, indentationLevel) => {
+  const generatedTypes = allOf.map((schema) => getGeneratedType(schema, imports, indentationLevel));
+
+  return `(${generatedTypes.join(" & ")})`;
+}
+
+const getGeneratedOneOf = (oneOf, imports, indentationLevel) => {
+  const generatedTypes = oneOf.map((schema) => getGeneratedType(schema, imports, indentationLevel));
+
+  return `(${generatedTypes.join(" | ")})`;
+}
+
+const updateImports = (imports, ref) => {
+  const refName = getGeneratedRef(ref);
+
+  if (imports.includes(refName)) return;
+
+  imports.push(refName);
+}
+
+const getGeneratedRef = (ref) => {
+  const refName = ref.split("/").pop();
+
+  return refName;
+}
+
+const getGeneratedEnum = (enumValues) => {
+  return enumValues.map((enumValue) => `"${enumValue}"`).join(" | ");
 }
 
 generateSpotifyClient();

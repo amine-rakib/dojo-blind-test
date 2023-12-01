@@ -3,6 +3,9 @@ import './App.css';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import swal from 'sweetalert';
+import { PagingSavedTrackObject } from './lib/spotify/model/PagingSavedTrackObject';
+import { SavedTrackObject } from './lib/spotify/model/SavedTrackObject';
+import { TrackObject } from './lib/spotify/model/TrackObject';
 
 const apiToken =
   'BQAP0oxaa9F-nyvVFc6aDrbJqMp8MbolFfHKOPACP6q6R0r7n83xj6ase-ePbd6uQucQEqOVbeyRddmHsT_q7MWxUFqYpX2XT_BEyfKL3gVN_ilZZ-UufyhcL5pl86ATSVtmiTsKYthMMlDwsMDXdqTkbj6GFfkiaClxG5ks0EbuAv6sG5ylFYzSeQV0QIRedZrk8pV9T0NyMCwHW2ry-6A_Tlmr9Q';
@@ -18,23 +21,23 @@ const fetchTracks = async () => {
   if (!response.ok) {
     throw new Error(`Fetching tracks failed with status ${response.status}`);
   }
-  const data = (await response.json()) as { items: any[] };
+  const data = (await response.json()) as PagingSavedTrackObject;
 
   return data.items;
 };
 
-const pickRandomTrack = (tracks: any[]) => {
+const pickRandomTrack = (tracks: SavedTrackObject[]) => {
   return tracks[Math.floor(Math.random() * tracks.length)]!;
 };
 
-const shuffleArray = (tracks: any[]) => {
+const shuffleArray = (tracks: SavedTrackObject[]) => {
   return tracks.sort(() => Math.random() - 0.5);
 };
 
-const AlbumCover = ({ track }: { track: any }) => {
+const AlbumCover = ({ track }: { track?: TrackObject }) => {
   return (
     <img
-      src={track.album.images?.[0]?.url ?? ''}
+      src={track?.album?.images?.[0]?.url ?? ''}
       style={{ width: 200, height: 200 }}
     />
   );
@@ -44,7 +47,7 @@ const TrackButton = ({
   track,
   onClick,
 }: {
-  track: any;
+  track: SavedTrackObject;
   onClick: () => void;
 }) => {
   return (
@@ -62,10 +65,10 @@ const App = () => {
     isLoading,
   } = useQuery({ queryKey: ['tracks'], queryFn: fetchTracks });
 
-  const [currentTrack, setCurrentTrack] = useState<any | undefined>(
+  const [currentTrack, setCurrentTrack] = useState<SavedTrackObject | undefined>(
     undefined,
   );
-  const [trackChoices, setTrackChoices] = useState<any[]>([]);
+  const [trackChoices, setTrackChoices] = useState<SavedTrackObject[]>([]);
 
   useEffect(() => {
     if (!tracks) {
@@ -80,7 +83,7 @@ const App = () => {
     setTrackChoices(choices);
   }, [tracks]);
 
-  const checkAnswer = (track: any) => {
+  const checkAnswer = (track: SavedTrackObject) => {
     if (track.track?.id == currentTrack?.track?.id) {
       swal('Bravo !', "C'est la bonne réponse", 'success');
     } else {
