@@ -4,7 +4,7 @@ import openapi from "../openapi.json" assert { type: 'json' };
 
 const targetDirectory = "src/lib/spotify/model";
 
-const generateSpotifyClient = async () => {
+async function generateSpotifyClient() {
   console.log("\nLaunched generate-spotify-client script");
   console.log('Generating Spotify client from OpenApi spec file...\n')
   await mkdir(targetDirectory, { recursive: true }); // Generate target directory
@@ -18,7 +18,7 @@ const generateSpotifyClient = async () => {
   }
 }
 
-const generateType = (typeName, typeSchema) => {  
+function generateType(typeName, typeSchema) {  
   console.log(`Generating type ${typeName}...`);
 
   const generatedCode = getGeneratedCode(typeName, typeSchema);
@@ -26,7 +26,7 @@ const generateType = (typeName, typeSchema) => {
   writeFile(`${targetDirectory}/${typeName}.ts`, generatedCode);
 }
 
-const getGeneratedCode = (typeName, typeSchema) => {
+function getGeneratedCode(typeName, typeSchema) {
   let imports = [];
 
   const generatedType = getGeneratedType(typeSchema, imports, 0);
@@ -38,7 +38,7 @@ const getGeneratedCode = (typeName, typeSchema) => {
   return `${generatedImports}${separator}${generatedExport}`;
 }
 
-const getGeneratedType = (typeSchema, imports, indentationLevel) => {
+function getGeneratedType(typeSchema, imports, indentationLevel) {
   const schemaType = typeSchema.type;
 
   if (typeSchema.allOf !== undefined) {
@@ -72,7 +72,7 @@ const getGeneratedType = (typeSchema, imports, indentationLevel) => {
   }
 }
 
-const getGeneratedObject = (typeSchema, imports, indentationLevel) => {
+function getGeneratedObject(typeSchema, imports, indentationLevel) {
 
   const properties = typeSchema.properties ?? {};
   const required = typeSchema.required ?? [];
@@ -91,19 +91,19 @@ const getGeneratedObject = (typeSchema, imports, indentationLevel) => {
   return `{${lineBreakWithIndentation}${generatedProperties.join(lineBreakWithIndentation)}\n${indentation}}`;
 }
 
-const getGeneratedAllOf = (allOf, imports, indentationLevel) => {
+function getGeneratedAllOf(allOf, imports, indentationLevel) {
   const generatedTypes = allOf.map((schema) => getGeneratedType(schema, imports, indentationLevel));
 
   return `(${generatedTypes.join(" & ")})`;
 }
 
-const getGeneratedOneOf = (oneOf, imports, indentationLevel) => {
+function getGeneratedOneOf(oneOf, imports, indentationLevel) {
   const generatedTypes = oneOf.map((schema) => getGeneratedType(schema, imports, indentationLevel));
 
   return `(${generatedTypes.join(" | ")})`;
 }
 
-const updateImports = (imports, ref) => {
+function updateImports(imports, ref) {
   const refName = getGeneratedRef(ref);
 
   if (imports.includes(refName)) return;
@@ -111,13 +111,13 @@ const updateImports = (imports, ref) => {
   imports.push(refName);
 }
 
-const getGeneratedRef = (ref) => {
+function getGeneratedRef(ref) {
   const refName = ref.split("/").pop();
 
   return refName;
 }
 
-const getGeneratedEnum = (enumValues) => {
+function getGeneratedEnum(enumValues) {
   return enumValues.map((enumValue) => `"${enumValue}"`).join(" | ");
 }
 
