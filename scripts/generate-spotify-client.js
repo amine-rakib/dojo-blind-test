@@ -4,7 +4,7 @@ import openapi from "../openapi.json" assert { type: 'json' };
 
 const targetDirectory = "src/lib/spotify/model";
 
-const generateSpotifyClient = async () => {
+async function generateSpotifyClient() {
   console.log("\nLaunched generate-spotify-client script");
   console.log('Generating Spotify client from OpenApi spec file...\n')
   await mkdir(targetDirectory, { recursive: true }); // Generate target directory
@@ -18,7 +18,7 @@ const generateSpotifyClient = async () => {
   }
 }
 
-const generateType = (typeName, typeSchema) => {  
+function generateType(typeName, typeSchema) {  
   console.log(`Generating type ${typeName}...`);
 
   const generatedCode = getGeneratedCode(typeName, typeSchema);
@@ -26,7 +26,7 @@ const generateType = (typeName, typeSchema) => {
   writeFile(`${targetDirectory}/${typeName}.ts`, generatedCode);
 }
 
-const getGeneratedCode = (type, schema) => {
+function getGeneratedCode(type, schema) {
   // TO DO: Generate typescript code from schema
   return "";
 }
