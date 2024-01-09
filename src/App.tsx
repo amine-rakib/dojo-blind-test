@@ -3,24 +3,23 @@ import './App.css';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import swal from 'sweetalert';
+import { getUsersSavedTracks } from './lib/spotify/api/tracks/tracks';
+import { GetUsersSavedTracksParams } from './lib/spotify/model';
 
 const apiToken =
   'BQAP0oxaa9F-nyvVFc6aDrbJqMp8MbolFfHKOPACP6q6R0r7n83xj6ase-ePbd6uQucQEqOVbeyRddmHsT_q7MWxUFqYpX2XT_BEyfKL3gVN_ilZZ-UufyhcL5pl86ATSVtmiTsKYthMMlDwsMDXdqTkbj6GFfkiaClxG5ks0EbuAv6sG5ylFYzSeQV0QIRedZrk8pV9T0NyMCwHW2ry-6A_Tlmr9Q';
 
-const fetchTracks = async () => {
-  const response = await fetch('https://api.spotify.com/v1/me/tracks', {
-    method: 'GET',
+const fetchTracks = async (params?: GetUsersSavedTracksParams) => {
+  return getUsersSavedTracks(params, {
     headers: {
-      Authorization: 'Bearer ' + apiToken,
+      Authorization: `Bearer ${apiToken}`,
     },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Fetching tracks failed with status ${response.status}`);
-  }
-  const data = (await response.json()) as { items: any[] };
-
-  return data.items;
+  }).then(
+    response => response.data.items,
+    error => {
+      console.error(error);
+    },
+  );
 };
 
 const pickRandomTrack = (tracks: any[]) => {
