@@ -26,9 +26,26 @@ function generateType(typeName, typeSchema) {
   writeFile(`${targetDirectory}/${typeName}.ts`, generatedCode);
 }
 
-function getGeneratedCode(type, schema) {
+function getGeneratedCode(typeName, typeSchema) {
+  const generatedType = getGeneratedType(typeSchema);
+
+  return `export type ${typeName} = ${generatedType};`;
+}
+
+function getGeneratedType(typeSchema) {
+  const schemaType = typeSchema.type;
+
   // TO DO: Generate typescript code from schema
-  return "";
+  switch (schemaType) {
+    case "number":
+    case "integer":
+    case "string":
+    case "boolean":
+    case "array":
+    case "object":
+    default:
+      return "";
+  }
 }
 
 generateSpotifyClient();
