@@ -1,52 +1,183 @@
 import { mkdir, writeFile } from "fs/promises";
 
-import openapi from "../openapi.json" assert { type: 'json' };
+import openapi from "../openapi.json" with { type: 'json' };
 
 const targetDirectory = "src/lib/spotify/model";
 
 async function generateSpotifyClient() {
   console.log("\nLaunched generate-spotify-client script");
   console.log('Generating Spotify client from OpenApi spec file...\n')
-  await mkdir(targetDirectory, { recursive: true }); // Generate target directory
+  await mkdir(targetDirectory, { recursive: true });
 
   const schemas = openapi.components.schemas;
   const typesToGenerate = Object.keys(schemas);
 
   for (const typeName of typesToGenerate) {
     const typeSchema = schemas[typeName];
-    generateType(typeName, typeSchema);
+    await generateType(typeName, typeSchema);
   }
 }
 
-function generateType(typeName, typeSchema) {  
+async function generateType(typeName, typeSchema) {  
   console.log(`Generating type ${typeName}...`);
+  const imports = new Set();
 
-  const generatedCode = getGeneratedCode(typeName, typeSchema);
+  const generatedCode = getGeneratedCode(typeName, typeSchema, imports);
+  const importsCode = Array.from(imports).map((importName) => `import { ${importName} } from './${importName}';`).join('\n');
+  const finalCode = importsCode ? `${importsCode}\n\n${generatedCode}` : generatedCode;
 
-  writeFile(`${targetDirectory}/${typeName}.ts`, generatedCode);
+  await writeFile(`${targetDirectory}/${typeName}.ts`, finalCode);
 }
 
-function getGeneratedCode(typeName, typeSchema) {
-  const generatedType = getGeneratedType(typeSchema);
-
+function getGeneratedCode(typeName, typeSchema, imports) {
+  const generatedType = getGeneratedType(typeSchema, imports);
   return `export type ${typeName} = ${generatedType};`;
 }
 
-function getGeneratedType(typeSchema) {
+function resolveReference(ref) {
+  const parts = ref.split('/');
+  let schema = openapi;
+  for (const part of parts.slice(1)) {
+    schema = schema[part];
+  }
+  return schema;
+}
+
+function handleAllOf(schema, imports) {
+  if (!schema.allOf) return null;
+  
+  const parts = schema.allOf.map(part => {
+    if (part.$ref) {
+      const refType = part.$ref.split('/').pop();
+      imports.add(refType);
+      return refType;
+    }
+    return getGeneratedType(part, imports);
+  });
+
+  // If there's only one part and it's a reference, return it directly
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  // If we have multiple parts, create an intersection type
+  return parts.join(' & ');
+}
+
+function handleOneOf(schema, imports) {
+  if (!schema.oneOf) return null;
+  
+  const types = schema.oneOf.map(item => {
+    if (item.$ref) {
+      const refType = item.$ref.split('/').pop();
+      imports.add(refType);
+      return refType;
+    }
+    return getGeneratedType(item, imports);
+  });
+  
+  return `(${types.join(' | ')})`;
+}
+
+function getPropertyType(property, imports) {
+  // Handle oneOf references
+  const oneOfType = handleOneOf(property, imports);
+  if (oneOfType) return oneOfType;
+
+  // Handle allOf references
+  const allOfType = handleAllOf(property, imports);
+  if (allOfType) return allOfType;
+
+  // Handle direct references
+  if (property.$ref) {
+    const refType = property.$ref.split('/').pop();
+    imports.add(refType);
+    return refType;
+  }
+
+  return getGeneratedType(property, imports);
+}
+
+function getGeneratedType(typeSchema, imports) {
+  // Handle allOf combinations first
+  const allOfType = handleAllOf(typeSchema, imports);
+  if (allOfType) return allOfType;
+
+  // Handle oneOf references
+  const oneOfType = handleOneOf(typeSchema, imports);
+  if (oneOfType) return oneOfType;
+
+  // Handle direct references
+  if (typeSchema.$ref) {
+    const refType = typeSchema.$ref.split('/').pop();
+    imports.add(refType);
+    return refType;
+  }
+
   const schemaType = typeSchema.type;
 
-  // TO DO: Generate typescript code from schema
   switch (schemaType) {
-    case "number":
-      return "number";
-    case "integer":
-      return "number"; // En TypeScript, on n'a pas de distinction entre integer et number
+    case "object": {
+      if (!typeSchema.properties) {
+        return "Record<string, unknown>";
+      }
+
+      const properties = typeSchema.properties;
+      const requiredFields = typeSchema.required || [];
+      
+      const propertyDefinitions = Object.entries(properties).map(([propName, propSchema]) => {
+        const isRequired = requiredFields.includes(propName);
+        const propertyType = getPropertyType(propSchema, imports);
+        return `  ${propName}${isRequired ? '' : '?'}: ${propertyType};`;
+      });
+
+      return `{\n${propertyDefinitions.join('\n')}\n}`;
+    }
+
+    case "array": {
+      const itemSchema = typeSchema.items;
+      // Handle oneOf in array items
+      const oneOfArrayType = handleOneOf(itemSchema, imports);
+      if (oneOfArrayType) {
+        return `${oneOfArrayType}[]`;
+      }
+      
+      if (itemSchema.$ref) {
+        const refType = itemSchema.$ref.split('/').pop();
+        imports.add(refType);
+        return `${refType}[]`;
+      }
+      
+      if (itemSchema.type === "string") {
+        return "string[]";
+      } else if (itemSchema.type === "number" || itemSchema.type === "integer") {
+        return "number[]";
+      } else if (itemSchema.type === "boolean") {
+        return "boolean[]";
+      }
+      
+      const itemType = getGeneratedType(itemSchema, imports);
+      return `${itemType}[]`;
+    }
+
     case "string":
+      if (typeSchema.enum) {
+        return typeSchema.enum.map(val => `'${val}'`).join(' | ');
+      }
       return "string";
+
+    case "number":
+    case "integer":
+      return "number";
+
     case "boolean":
       return "boolean";
+
     default:
-      return "unknown"; 
+      if (typeSchema.properties) {
+        return getGeneratedType({ ...typeSchema, type: 'object' }, imports);
+      }
+      return "unknown";
   }
 }
 
