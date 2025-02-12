@@ -38,13 +38,15 @@ function getGeneratedType(typeSchema) {
   // TO DO: Generate typescript code from schema
   switch (schemaType) {
     case "number":
+      return "number";
     case "integer":
+      return "number"; // En TypeScript, on n'a pas de distinction entre integer et number
     case "string":
+      return "string";
     case "boolean":
-    case "array":
-    case "object":
+      return "boolean";
     default:
-      return "";
+      return "unknown"; 
   }
 }
 
