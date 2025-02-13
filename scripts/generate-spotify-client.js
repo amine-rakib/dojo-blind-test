@@ -45,23 +45,39 @@ function resolveReference(ref) {
 
 function handleAllOf(schema, imports) {
   if (!schema.allOf) return null;
-  
-  const parts = schema.allOf.map(part => {
+
+  const parts = [];
+  let inlineProps = null;
+
+  for (const part of schema.allOf) {
     if (part.$ref) {
       const refType = part.$ref.split('/').pop();
       imports.add(refType);
-      return refType;
-    }
-    return getGeneratedType(part, imports);
-  });
+      parts.push(refType);
+    } else if (part.type === "object" && part.properties) {
+      // Handle inline object properties
+      const properties = part.properties;
+      const requiredFields = part.required || [];
+      
+      const propertyDefinitions = Object.entries(properties).map(([propName, propSchema]) => {
+        const isRequired = requiredFields.includes(propName);
+        const propertyType = getPropertyType(propSchema, imports);
+        return `  ${propName}${isRequired ? '' : '?'}: ${propertyType};`;
+      });
 
-  // If there's only one part and it's a reference, return it directly
-  if (parts.length === 1) {
-    return parts[0];
+      inlineProps = `{\n${propertyDefinitions.join('\n')}\n}`;
+    }
   }
 
-  // If we have multiple parts, create an intersection type
-  return parts.join(' & ');
+  if (parts.length === 0 && inlineProps) {
+    return inlineProps;
+  } else if (parts.length > 0 && inlineProps) {
+    return `${parts.join(' & ')} & ${inlineProps}`;
+  } else if (parts.length > 0) {
+    return parts.join(' & ');
+  }
+
+  return null;
 }
 
 function handleOneOf(schema, imports) {
@@ -80,13 +96,13 @@ function handleOneOf(schema, imports) {
 }
 
 function getPropertyType(property, imports) {
-  // Handle oneOf references
-  const oneOfType = handleOneOf(property, imports);
-  if (oneOfType) return oneOfType;
-
   // Handle allOf references
   const allOfType = handleAllOf(property, imports);
   if (allOfType) return allOfType;
+
+  // Handle oneOf references
+  const oneOfType = handleOneOf(property, imports);
+  if (oneOfType) return oneOfType;
 
   // Handle direct references
   if (property.$ref) {
